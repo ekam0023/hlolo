@@ -1,23 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 
 export default function CTA() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus("loading");
-
-    const { error } = await supabase.from("waitlist").insert({ email });
-
-    if (error) {
-      setStatus("error");
+  const handleCheckout = async () => {
+    setLoading(true);
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
     } else {
-      setStatus("success");
-      setEmail("");
+      setLoading(false);
+      alert("Something went wrong. Try again.");
     }
   };
 
@@ -33,41 +33,15 @@ export default function CTA() {
         <p className="mt-4 text-graphite">
           $79. Ships October. Made in one colorway, on purpose.
         </p>
-
-        {status === "success" ? (
-          <p className="mt-8 font-mono text-[13px] text-moss">
-            You&apos;re on the list — we&apos;ll email you when it ships.
-          </p>
-        ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="mt-8 flex w-full max-w-sm flex-col items-center gap-3"
-          >
-            <input
-              type="email"
-              required
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-full border border-ink/20 bg-transparent px-6 py-3 text-center font-mono text-[13px] text-ink placeholder:text-graphite/50 focus:outline-none focus:border-ink"
-            />
-            <button
-              type="submit"
-              disabled={status === "loading"}
-              className="inline-flex items-center gap-3 rounded-full bg-ink px-8 py-4 font-mono text-[12px] uppercase tracking-widest2 text-mist transition-colors hover:bg-moss disabled:opacity-60"
-            >
-              {status === "loading" ? "Reserving..." : "Reserve — $10 deposit"}
-            </button>
-            {status === "error" && (
-              <p className="font-mono text-[11px] text-red-600">
-                Something went wrong. Try again.
-              </p>
-            )}
-          </form>
-        )}
-
+        <button
+          onClick={handleCheckout}
+          disabled={loading}
+          className="mt-8 inline-flex items-center gap-3 rounded-full bg-ink px-8 py-4 font-mono text-[12px] uppercase tracking-widest2 text-mist transition-colors hover:bg-moss disabled:opacity-60"
+        >
+          {loading ? "Redirecting..." : "Reserve — $10 deposit"}
+        </button>
         <p className="mt-4 font-mono text-[11px] text-graphite/70">
-          Refundable anytime before it ships.
+          Refundable anytime before it ships. (Demo — test mode, no real charge)
         </p>
       </div>
     </section>
