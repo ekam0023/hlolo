@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-export default function SuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
@@ -16,13 +16,11 @@ export default function SuccessPage() {
     }
 
     const logOrder = async () => {
-      const { error } = await supabase.from("orders").insert({
+      await supabase.from("orders").insert({
         stripe_session_id: sessionId,
         amount: 1000,
         status: "paid",
       });
-
-      // Ignore duplicate errors (e.g. page refresh) — still show success
       setStatus("done");
     };
 
@@ -30,7 +28,7 @@ export default function SuccessPage() {
   }, [sessionId]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-mist px-6 text-center">
+    <>
       {status === "loading" && <p className="text-graphite">Confirming your payment...</p>}
       {status === "done" && (
         <>
@@ -45,6 +43,16 @@ export default function SuccessPage() {
       {status === "error" && (
         <p className="text-graphite">Something went wrong confirming your payment.</p>
       )}
+    </>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center bg-mist px-6 text-center">
+      <Suspense fallback={<p className="text-graphite">Loading...</p>}>
+        <SuccessContent />
+      </Suspense>
     </main>
   );
 }
