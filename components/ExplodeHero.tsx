@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
-const FRAME_COUNT = 40;
+const FRAME_COUNT = 96;
 const framePath = (i: number) =>
   `/frames/frame-${String(i).padStart(3, "0")}.jpg`;
 
@@ -65,10 +65,24 @@ export default function ExplodeHero() {
   const [loaded, setLoaded] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  const lastDrawnRef = useRef(0);
+
   const drawFrame = useCallback((index: number) => {
     const canvas = canvasRef.current;
-    const img = imagesRef.current[index];
-    if (!canvas || !img || !img.complete) return;
+    let img = imagesRef.current[index];
+
+    // If this exact frame hasn't finished decoding yet, don't skip the
+    // draw entirely — fall back to the nearest frame that HAS loaded so
+    // scrolling still looks continuous while the rest load in.
+    if (!img || !img.complete) {
+      const fallback = imagesRef.current[lastDrawnRef.current];
+      if (!fallback || !fallback.complete) return;
+      img = fallback;
+    } else {
+      lastDrawnRef.current = index;
+    }
+
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
